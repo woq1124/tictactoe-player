@@ -12,7 +12,7 @@ export class MMDManager {
   model: THREE.SkinnedMesh | null = null;
   mixer: THREE.AnimationMixer | null = null;
   animation: THREE.AnimationClip | null = null;
-
+  animationFrameId: number | null = null;
   audioListener = new THREE.AudioListener();
   audio = new THREE.Audio(this.audioListener);
 
@@ -23,7 +23,11 @@ export class MMDManager {
     this.lights.forEach((light) => this.scene.add(light));
   }
 
-  setCamera(params: { position?: [x: number, y: number, z: number]; aspect?: number }) {
+  setCamera(params: {
+    position?: [x: number, y: number, z: number];
+    lookAt?: [x: number, y: number, z: number];
+    aspect?: number;
+  }) {
     if (params.position) {
       this.camera.position.set(...params.position);
     }
@@ -31,11 +35,22 @@ export class MMDManager {
       this.camera.aspect = params.aspect;
       this.camera.updateProjectionMatrix();
     }
+    if (params.lookAt) {
+      this.camera.lookAt(...params.lookAt);
+    }
   }
 
-  async mount(container: HTMLElement) {
+  mount(container: HTMLElement) {
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(this.renderer.domElement);
+    this.render();
+  }
+
+  render() {
+    this.renderer.setAnimationLoop(() => {
+      this.renderer.render(this.scene, this.camera);
+      this.mixer?.update(1 / 120);
+    });
   }
 
   async loadModel(url: string, onProgress?: (progress: ProgressEvent) => void) {
@@ -45,9 +60,25 @@ export class MMDManager {
     this.renderer.render(this.scene, this.camera);
   }
 
+  unloadModel() {
+    if (!this.model) {
+      return;
+    }
+    this.scene.remove(this.model);
+    this.model.geometry.dispose();
+    if (Array.isArray(this.model.material)) {
+      this.model.material.forEach((material) => material.dispose());
+    } else {
+      this.model.material.dispose();
+    }
+    this.model = null;
+    this.mixer = null;
+  }
+
   async loadAnimation(url: string, onProgress?: (progress: ProgressEvent) => void) {
     if (!this.model || !this.mixer) {
-      throw new Error('Model is not loaded');
+      console.warn('Model or mixer is not loaded');
+      return;
     }
     this.animation = await new Promise((resolve, reject) => {
       this.mmdLoader.loadAnimation(
@@ -66,6 +97,11 @@ export class MMDManager {
     });
   }
 
+  unloadAnimation() {
+    this.animation && this.mixer?.uncacheAction(this.animation);
+    this.animation = null;
+  }
+
   async loadAudio(
     url: string,
     params?: { loop?: boolean; volume?: number },
@@ -76,7 +112,7 @@ export class MMDManager {
         url,
         (buffer) => {
           resolve(buffer);
-          this.audio.setLoop(params?.loop ?? false);
+          this.audio.setLoop(params?.loop ?? true);
           this.audio.setVolume(params?.volume ?? 0.5);
         },
         onProgress,
@@ -89,18 +125,30 @@ export class MMDManager {
 
   async play() {
     if (!this.model || !this.mixer || !this.animation) {
-      throw new Error('Model, mixer, or animation is not loaded');
+      console.warn('Model, mixer or animation is not loaded');
+      return;
     }
-    const animate = () => {
-      requestAnimationFrame(animate);
-      this.renderer.render(this.scene, this.camera);
-      this.mixer?.update(0.00833);
-    };
+
     this.mixer.clipAction(this.animation).play();
     const audioContext = new AudioContext();
     audioContext.resume().then(() => {
       this.audio.play();
-      setTimeout(animate, 250);
     });
+  }
+
+  async stopAnimation() {
+    if (!this.model || !this.mixer || !this.animation) {
+      return;
+    }
+    this.mixer.existingAction(this.animation)?.stop();
+    this.audio.stop();
+    cancelAnimationFrame(this.animationFrameId!);
+  }
+
+  async dispose() {
+    this.stopAnimation();
+    this.unloadAnimation();
+    this.unloadModel();
+    this.renderer.dispose();
   }
 }

@@ -1,6 +1,38 @@
 .container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.player {
   position: relative;
   width: 100%;
   height: 100%;
   flex: 1 1 auto;
+  cursor: grab;
+}
+
+.player:active {
+  cursor: grabbing;
+}
+
+.controller {
+  width: 1000px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.controller > span {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
 }
