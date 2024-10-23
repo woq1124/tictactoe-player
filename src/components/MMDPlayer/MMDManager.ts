@@ -91,16 +91,16 @@ export class MMDManager {
     if (!this.model || !this.mixer || !this.animation) {
       throw new Error('Model, mixer, or animation is not loaded');
     }
+    const animate = () => {
+      requestAnimationFrame(animate);
+      this.renderer.render(this.scene, this.camera);
+      this.mixer?.update(0.00833);
+    };
     this.mixer.clipAction(this.animation).play();
     const audioContext = new AudioContext();
     audioContext.resume().then(() => {
       this.audio.play();
+      setTimeout(animate, 250);
     });
-    const animate = () => {
-      requestAnimationFrame(animate);
-      this.renderer.render(this.scene, this.camera);
-      this.mixer?.update(5 / 600);
-    };
-    animate();
   }
 }
