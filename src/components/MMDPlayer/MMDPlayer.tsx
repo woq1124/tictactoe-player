@@ -4,6 +4,8 @@ import './MMDPlayer.css';
 
 const models = {
   miku: '/models/miku/Miku_Hatsune_Ver2.pmd',
+  Neru_Akita: '/models/miku/Neru_Akita.pmd',
+  rin: '/models/miku/Rin_Kagamene_act2.pmd',
   firefly: '/models/firefly/firefly.pmx',
   tingyun: '/models/tingyun/tingyun.pmx',
 } as Record<string, string>;
@@ -151,10 +153,13 @@ export function MMDPlayer() {
         <button onClick={handleStop}>Stop</button>
         <button onClick={handleCameraReset}>Reset Camera</button>
         <select onChange={handleSelectModel}>
-          <option value='0'>Select Model</option>
-          <option value='miku'>Miku</option>
-          <option value='firefly'>Firefly</option>
-          <option value='tingyun'>Tingyun</option>
+          {Object.keys(models).map((model) => {
+            return (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            );
+          })}
         </select>
       </div>
       <div className='player' ref={containerRef}></div>
