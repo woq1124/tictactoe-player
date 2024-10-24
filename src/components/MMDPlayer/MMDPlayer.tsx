@@ -10,6 +10,17 @@ const models = {
   tingyun: '/models/tingyun/tingyun.pmx',
 } as Record<string, string>;
 
+const motions = {
+  rabbitHole: {
+    motion: '/motions/rabbit-hole/rabbit-hole.vmd',
+    audio: '/songs/rabbit-hole.mp3',
+  },
+  worldIsMine: {
+    motion: '/motions/WorldisMine/WorldIsMine.vmd',
+    audio: '/songs/WorldIsMine.wav',
+  },
+} as Record<string, { motion: string; audio: string }>;
+
 export function MMDPlayer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mmdManagerRef = useRef<MMDManager>();
@@ -43,13 +54,13 @@ export function MMDPlayer() {
     mmdManager.setCamera({ position: [0, 10, 20] });
 
     // FIXME: callback hell
-    mmdManager.loadModel(models.miku).then(() => {
-      mmdManager.loadAnimation('/motions/rabbit-hole/rabbit-hole.vmd').then(() => {
-        mmdManager.loadAudio('/songs/rabbit-hole.mp3').then(() => {
-          console.log('loaded');
-        });
-      });
-    });
+    // mmdManager.loadModel(models.miku).then(() => {
+    //   mmdManager.loadAnimation('/motions/WorldisMine/WorldIsMine.vmd').then(() => {
+    //     mmdManager.loadAudio('/songs/WorldIsMine.wav').then(() => {
+    //       console.log('loaded');
+    //     });
+    //   });
+    // });
 
     return () => {
       mmdManager.dispose();
@@ -138,7 +149,24 @@ export function MMDPlayer() {
         mmdManager.unloadModel();
         mmdManager.unloadAnimation();
         await mmdManager.loadModel(models[model]);
-        await mmdManager.loadAnimation('/motions/rabbit-hole/rabbit-hole.vmd');
+        await mmdManager.loadAnimation('/motions/WorldisMine/WorldIsMine.vmd');
+      }
+    },
+    [handleStop],
+  );
+
+  const handleSelectMotion = useCallback(
+    async (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const mmdManager = mmdManagerRef.current;
+      if (!mmdManager) {
+        return;
+      }
+      handleStop();
+      const motion = e.target.value;
+      if (motions[motion]) {
+        mmdManager.unloadAnimation();
+        await mmdManager.loadAnimation(motions[motion].motion);
+        await mmdManager.loadAudio(motions[motion].audio);
       }
     },
     [handleStop],
@@ -157,6 +185,15 @@ export function MMDPlayer() {
             return (
               <option key={model} value={model}>
                 {model}
+              </option>
+            );
+          })}
+        </select>
+        <select onChange={handleSelectMotion}>
+          {Object.keys(motions).map((motion) => {
+            return (
+              <option key={motion} value={motion}>
+                {motion}
               </option>
             );
           })}
